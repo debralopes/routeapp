@@ -1,0 +1,1711 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Changed Title -->
+    <title>Percurso - Organizador de Cursos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Custom styles */
+        .progress-bar {
+            height: 8px;
+            border-radius: 4px;
+            background-color: #e5e7eb; /* bg-gray-200 */
+        }
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background-color: #4f46e5; /* bg-indigo-600 */
+            transition: width 0.3s ease;
+        }
+        .floating-btn {
+            position: fixed;
+            bottom: 5rem; /* Adjusted to avoid overlap with bottom nav */
+            right: 1.5rem;
+            width: 56px; /* Slightly smaller */
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            z-index: 50;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.5rem; /* Added padding */
+            min-width: 24px; /* Ensure minimum size */
+            height: 24px;
+            border-radius: 9999px; /* Fully rounded */
+            background-color: #e0e7ff; /* bg-indigo-100 */
+            color: #4f46e5; /* text-indigo-600 */
+            font-size: 12px;
+            font-weight: bold;
+            line-height: 1; /* Ensure icon vertical centering */
+        }
+        .streak {
+            position: relative;
+            padding-left: 28px;
+        }
+        .streak::before {
+            content: "🔥";
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.25rem; /* Slightly larger emoji */
+        }
+        .timer-display {
+            font-family: 'Courier New', monospace;
+            font-size: 2.5rem;
+            letter-spacing: 2px;
+        }
+        .course-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+        .tab-active {
+            border-bottom: 3px solid #4f46e5;
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        .onboarding-slide {
+            min-height: 70vh; /* Adjusted height */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center; /* Center content */
+            text-align: center; /* Center text */
+        }
+        /* Hide scrollbar for carousel */
+        #onboarding-carousel {
+           -ms-overflow-style: none;  /* IE and Edge */
+           scrollbar-width: none;  /* Firefox */
+        }
+        #onboarding-carousel::-webkit-scrollbar {
+            display: none; /* Chrome, Safari, Opera */
+        }
+        /* Ensure main app content has padding at the bottom to not be hidden by nav */
+        #main-app main {
+            padding-bottom: 80px; /* Height of the bottom nav + some buffer */
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+    <!-- App Container -->
+    <div id="app" class="min-h-screen">
+        <!-- Onboarding Screen (shown only on first use) -->
+        <div id="onboarding" class="fixed inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 transition-opacity duration-300" style="display: none;"> <!-- Initially hidden -->
+            <div class="w-full max-w-md mx-auto">
+                <div class="text-center mb-8">
+                    <!-- Changed App Name -->
+                    <h1 class="text-3xl font-bold text-indigo-600 mb-2">Bem-vindo ao Percurso</h1>
+                    <p class="text-gray-600">O organizador definitivo para seus cursos online</p>
+                </div>
+
+                <!-- Onboarding Carousel (Basic Structure - requires JS for slide functionality) -->
+                <div id="onboarding-carousel" class="relative overflow-hidden mb-8">
+                    <div class="flex transition-transform duration-300">
+                        <!-- Slide 1 -->
+                        <div class="onboarding-slide w-full flex-shrink-0 px-4">
+                             <i class="fas fa-book-open text-indigo-600 text-5xl mb-4"></i>
+                            <h2 class="text-xl font-semibold mb-2">Centralize seus cursos</h2>
+                            <p class="text-gray-600 max-w-xs mx-auto">Mantenha todos seus cursos, logins e progresso em um só lugar de forma segura.</p>
+                        </div>
+
+                        <!-- Slide 2 -->
+                        <div class="onboarding-slide w-full flex-shrink-0 px-4" > <!-- Hide other slides initially -->
+                            <i class="fas fa-chart-line text-indigo-600 text-5xl mb-4"></i>
+                            <h2 class="text-xl font-semibold mb-2">Acompanhe seu progresso</h2>
+                            <p class="text-gray-600 max-w-xs mx-auto">Visualize seu avanço em cada curso e mantenha-se motivado com metas alcançáveis.</p>
+                        </div>
+
+                        <!-- Slide 3 -->
+                        <div class="onboarding-slide w-full flex-shrink-0 px-4" > <!-- Hide other slides initially -->
+                             <i class="fas fa-stopwatch-20 text-indigo-600 text-5xl mb-4"></i> <!-- Changed icon -->
+                            <h2 class="text-xl font-semibold mb-2">Tempo de estudo inteligente</h2>
+                            <p class="text-gray-600 max-w-xs mx-auto">Registre suas sessões de estudo e veja quanto tempo dedicou a cada curso.</p>
+                        </div>
+                    </div>
+
+                    <!-- Carousel Indicators (requires JS) -->
+                    <div class="flex justify-center space-x-2 my-4">
+                        <button class="w-2 h-2 rounded-full bg-indigo-600"></button> <!-- Active indicator -->
+                        <button class="w-2 h-2 rounded-full bg-indigo-200"></button>
+                        <button class="w-2 h-2 rounded-full bg-indigo-200"></button>
+                    </div>
+                </div>
+
+                 <!-- Onboarding Buttons -->
+                 <div class="flex flex-col space-y-3">
+                     <button id="next-onboarding" class="w-full bg-indigo-600 text-white py-3 px-4 rounded-lg font-semibold">Próximo</button>
+                     <button id="skip-onboarding" class="text-indigo-600 font-medium">Pular introdução</button>
+                 </div>
+
+            </div>
+        </div>
+
+        <!-- Login Screen (shown when not authenticated) -->
+        <div id="login-screen" class="hidden fixed inset-0 bg-white z-40 flex flex-col items-center justify-center p-6">
+            <div class="w-full max-w-sm">
+                <div class="text-center mb-8">
+                    <!-- Changed App Name -->
+                    <h1 class="text-3xl font-bold text-indigo-600 mb-2">Percurso</h1>
+                    <p class="text-gray-600">Faça login para sincronizar seus dados</p>
+                </div>
+
+                <div class="space-y-4 mb-6">
+                    <button class="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg">
+                        <i class="fab fa-google"></i>
+                        <span>Continuar com Google</span>
+                    </button>
+                    <button class="w-full flex items-center justify-center space-x-2 bg-black hover:bg-gray-800 text-white py-2 px-4 rounded-lg">
+                        <i class="fab fa-apple"></i>
+                        <span>Continuar com Apple</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center mb-6">
+                    <div class="flex-1 border-t border-gray-300"></div>
+                    <span class="px-4 text-gray-500">ou</span>
+                    <div class="flex-1 border-t border-gray-300"></div>
+                </div>
+
+                <form class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                        <input type="email" id="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Senha</label>
+                        <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    </div>
+
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 px-4 rounded-lg font-semibold">Entrar</button>
+                </form>
+
+                <div class="text-center mt-4">
+                    <p class="text-sm text-gray-600">Ao continuar, você concorda com nossos <a href="#" class="text-indigo-600 hover:underline">Termos</a> e <a href="#" class="text-indigo-600 hover:underline">Privacidade</a>.</p>
+                </div>
+
+                <div class="text-center mt-6">
+                    <p class="text-gray-600">Não tem uma conta? <a href="#" class="text-indigo-600 font-medium hover:underline">Cadastre-se</a></p> <!-- Link functionality not implemented -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App Layout (shown when authenticated) -->
+        <div id="main-app" class="hidden">
+            <!-- Header -->
+            <header class="bg-white shadow-sm sticky top-0 z-30">
+                <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <div class="flex items-center space-x-2">
+                        <i class="fas fa-route text-indigo-600 text-xl"></i> <!-- Changed Icon -->
+                        <!-- Changed App Name -->
+                        <h1 class="text-xl font-bold text-gray-900">Percurso</h1>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        <button class="text-gray-600 hover:text-indigo-600 relative">
+                            <i class="fas fa-bell"></i>
+                            <!-- Notification badge (Example) -->
+                            <span class="absolute -top-1 -right-1 flex h-3 w-3">
+                              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                              <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                            </span>
+                        </button>
+                        <div class="relative">
+                            <button id="user-menu-button" class="flex items-center space-x-2 focus:outline-none">
+                                <!-- User Initials/Avatar -->
+                                <div id="user-avatar" class="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-medium">U</div>
+                                <span id="user-name-header" class="hidden md:inline text-gray-700">Usuário</span>
+                                <i class="fas fa-chevron-down text-xs text-gray-500"></i>
+                            </button>
+
+                            <!-- Dropdown menu -->
+                            <div id="user-menu" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50 ring-1 ring-black ring-opacity-5">
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-action="profile">Perfil</a>
+                                <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100" data-action="settings">Configurações</a>
+                                <div class="border-t border-gray-100 my-1"></div>
+                                <a href="#" class="block px-4 py-2 text-sm text-red-600 hover:bg-gray-100" data-action="logout">Sair</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content Area -->
+            <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+
+                <!-- Dashboard View -->
+                <div id="dashboard-view">
+                    <div class="mb-8">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Olá, <span id="user-name-greeting">Usuário</span>!</h2>
+
+                        <!-- Widgets Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <!-- Weekly Goal Widget -->
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-medium text-gray-900">Meta Semanal</h3>
+                                    <span id="weekly-goal-progress-text" class="text-sm text-indigo-600 font-medium">0h / 10h</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div id="weekly-goal-progress-bar" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                                <div class="mt-2 flex justify-between text-sm text-gray-500">
+                                    <span id="weekly-goal-percentage">0% concluído</span>
+                                    <!-- Optional: days remaining -->
+                                </div>
+                            </div>
+
+                            <!-- Streak Widget -->
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-medium text-gray-900">Sequência</h3>
+                                    <span id="streak-days" class="streak text-indigo-600 font-bold">0 dias</span>
+                                </div>
+                                <!-- Example streak visual (needs JS logic) -->
+                                <div class="flex space-x-1">
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                    <div class="w-6 h-6 rounded-full bg-gray-100"></div>
+                                </div>
+                            </div>
+
+                            <!-- Achievement Widget -->
+                            <div class="bg-white p-6 rounded-xl shadow-sm">
+                                <div class="flex items-center justify-between mb-4">
+                                    <h3 class="font-medium text-gray-900">Conquistas</h3>
+                                    <span id="achievements-count" class="text-sm text-indigo-600 font-medium">0 / 15</span>
+                                </div>
+                                <div id="achievements-preview" class="flex space-x-2 overflow-hidden">
+                                    <!-- Badges will be added by JS -->
+                                    <span class="text-sm text-gray-400">Nenhuma ainda</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Suggestion Box (Optional - needs JS logic) -->
+                        <div class="mb-6">
+                             <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-lg font-semibold text-gray-900">Sugestão para hoje</h3>
+                                <a href="#" class="text-sm text-indigo-600 hover:underline">Ver todos</a>
+                            </div>
+                            <div class="bg-indigo-50 p-4 rounded-lg">
+                                <p class="text-indigo-800">Que tal continuar o curso <strong>React Avançado</strong>?</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Courses Section -->
+                    <div class="mb-8">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-3">
+                            <h2 class="text-xl font-bold text-gray-900">Seus Cursos</h2>
+                            <div class="flex space-x-2">
+                                <div class="relative">
+                                    <select id="sort-courses" class="appearance-none bg-white border border-gray-300 rounded-lg pl-3 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                        <option value="recent">Recentes</option>
+                                        <option value="progress">Progresso</option>
+                                        <option value="name">Nome (A-Z)</option>
+                                        <option value="deadline">Prazo</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
+                                        <i class="fas fa-chevron-down text-gray-400 text-xs"></i>
+                                    </div>
+                                </div>
+                                <button id="filter-courses-btn" class="bg-white border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-600 hover:bg-gray-50">
+                                    <i class="fas fa-filter mr-1"></i> Filtros
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Grid for Course Cards -->
+                        <div id="course-list-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Course cards will be dynamically inserted here by JS -->
+
+                             <!-- Add Course Card (static placeholder, functionality added by JS) -->
+                             <div id="add-course-card-placeholder" class="course-card bg-white rounded-xl shadow-sm overflow-hidden border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 transition-all duration-200 hover:border-indigo-400 hover:bg-gray-50 cursor-pointer min-h-[200px]">
+                                <i class="fas fa-plus text-3xl text-gray-400 mb-2"></i>
+                                <h3 class="text-lg font-medium text-gray-700 text-center">Adicionar Novo Curso</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Course Detail View (hidden by default) -->
+                <div id="course-detail-view" class="hidden">
+                    <div class="mb-6">
+                        <button id="back-to-dashboard" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar para Cursos
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden mb-8">
+                        <div class="p-6">
+                            <!-- Course Header -->
+                            <div class="flex flex-col sm:flex-row justify-between items-start mb-4 gap-3">
+                                <div>
+                                    <h2 id="detail-course-name" class="text-2xl font-bold text-gray-900">Nome do Curso</h2>
+                                    <p id="detail-course-platform" class="text-gray-500">Plataforma</p>
+                                </div>
+                                <span id="detail-course-status" class="px-3 py-1 bg-gray-100 text-gray-800 rounded-full text-sm font-medium whitespace-nowrap">Status</span>
+                            </div>
+
+                            <!-- Course Info Grid -->
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-x-6 gap-y-4 mb-6 text-sm">
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Link</h3>
+                                    <a id="detail-course-link" href="#" target="_blank" class="text-indigo-600 hover:underline break-all line-clamp-1" title="Abrir link do curso">N/A</a>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Usuário/Email</h3>
+                                    <div class="flex items-center">
+                                        <span id="detail-course-username">N/A</span>
+                                        <button id="copy-username-btn" class="ml-2 text-indigo-600 hover:text-indigo-800" title="Copiar usuário">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Tags</h3>
+                                    <div id="detail-course-tags" class="flex flex-wrap gap-2">
+                                        <span class="text-gray-400">Nenhuma tag</span>
+                                        <!-- Tags added by JS -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Data Limite</h3>
+                                    <div class="flex items-center">
+                                        <span id="detail-course-deadline">Nenhuma</span>
+                                        <!-- Edit button can be added here -->
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Prioridade</h3>
+                                    <div id="detail-course-priority">
+                                        <span class="px-2 py-0.5 bg-gray-100 text-gray-800 rounded-full text-xs">N/D</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium text-gray-500 mb-1">Horas Totais</h3>
+                                    <span id="detail-course-total-hours">N/A</span>
+                                </div>
+                            </div>
+
+                             <!-- Progress Bar -->
+                            <div class="mb-6">
+                                <h3 class="text-sm font-medium text-gray-500 mb-2">Progresso</h3>
+                                <div class="flex items-center justify-between mb-1 text-sm">
+                                    <span id="detail-progress-percentage" class="font-medium">0% concluído</span>
+                                    <span id="detail-progress-hours" class="text-gray-500">0h / 0h</span>
+                                </div>
+                                <div class="progress-bar">
+                                    <div id="detail-progress-bar" class="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+
+                             <!-- Action Buttons -->
+                            <div class="flex flex-wrap gap-3 mb-8">
+                                <button id="detail-start-timer-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg flex items-center font-medium text-sm">
+                                    <i class="fas fa-play mr-2"></i>
+                                    Iniciar Timer
+                                </button>
+                                <button id="detail-edit-btn" class="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center font-medium text-sm">
+                                    <i class="far fa-edit mr-2"></i>
+                                    Editar
+                                </button>
+                                <button id="detail-complete-btn" class="border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-lg flex items-center font-medium text-sm">
+                                    <i class="fas fa-check mr-2"></i>
+                                    Marcar Concluído
+                                </button>
+                                 <button id="detail-delete-btn" class="border border-red-300 text-red-600 hover:bg-red-50 px-4 py-2 rounded-lg flex items-center font-medium text-sm ml-auto">
+                                    <i class="far fa-trash-alt mr-2"></i>
+                                    Excluir
+                                </button>
+                            </div>
+
+                            <!-- Modules Section -->
+                            <div class="mb-8">
+                                <div class="flex justify-between items-center mb-4">
+                                    <h3 class="text-lg font-semibold text-gray-900">Módulos / Aulas</h3>
+                                    <button id="add-module-btn" class="text-indigo-600 hover:text-indigo-800 font-medium text-sm flex items-center">
+                                        <i class="fas fa-plus mr-1"></i> Adicionar
+                                    </button>
+                                </div>
+                                <div id="detail-modules-list" class="space-y-3">
+                                    <!-- Modules added by JS -->
+                                    <p class="text-gray-500">Nenhum módulo adicionado.</p>
+                                </div>
+                            </div>
+
+                            <!-- Study History Section -->
+                            <div class="mb-8">
+                                <h3 class="text-lg font-semibold text-gray-900 mb-4">Histórico de Estudos</h3>
+                                <div id="detail-history-table-container" class="overflow-hidden shadow ring-1 ring-black ring-opacity-5 rounded-lg">
+                                    <table class="min-w-full divide-y divide-gray-300">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" class="py-3 pl-4 pr-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sm:pl-6">Data</th>
+                                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duração</th>
+                                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider hidden sm:table-cell">Módulo</th>
+                                                <th scope="col" class="px-3 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notas</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="detail-history-list" class="divide-y divide-gray-200 bg-white">
+                                            <!-- History items added by JS -->
+                                            <tr><td colspan="4" class="text-center py-4 text-gray-500">Nenhuma sessão registrada.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+
+                            <!-- Notes Section -->
+                            <div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">Anotações Gerais</h3>
+                                <textarea id="detail-general-notes" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="4" placeholder="Adicione anotações gerais sobre o curso..."></textarea>
+                                <button id="save-general-notes-btn" class="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium">Salvar Anotações</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Add/Edit Course View (hidden by default) -->
+                <div id="add-course-view" class="hidden">
+                    <div class="mb-6">
+                        <button id="back-from-add-course" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 mb-8">
+                        <h2 id="add-edit-title" class="text-2xl font-bold text-gray-900 mb-6">Adicionar Novo Curso</h2>
+
+                        <form id="course-form" class="space-y-6">
+                             <!-- Hidden input for editing -->
+                            <input type="hidden" name="courseId" id="courseId">
+
+                            <div>
+                                <label for="course-name" class="block text-sm font-medium text-gray-700 mb-1">Nome do Curso*</label>
+                                <input type="text" name="course-name" id="course-name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: React Avançado" required>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="course-link" class="block text-sm font-medium text-gray-700 mb-1">Link do Curso</label>
+                                    <input type="url" name="course-link" id="course-link" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="https://">
+                                </div>
+                                <div>
+                                    <label for="course-platform" class="block text-sm font-medium text-gray-700 mb-1">Plataforma/Origem</label>
+                                    <input type="text" name="course-platform" id="course-platform" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: Udemy, Coursera">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="course-username" class="block text-sm font-medium text-gray-700 mb-1">Usuário/Email de Acesso</label>
+                                <input type="text" name="course-username" id="course-username" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Seu usuário ou email">
+                                <p class="mt-1 text-xs text-gray-500"><i class="fas fa-lock mr-1"></i>Nunca armazenamos ou pedimos sua senha.</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="course-deadline" class="block text-sm font-medium text-gray-700 mb-1">Data Limite (Opcional)</label>
+                                    <input type="date" name="course-deadline" id="course-deadline" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label for="course-hours" class="block text-sm font-medium text-gray-700 mb-1">Horas Totais (Opcional)</label>
+                                    <input type="number" name="course-hours" id="course-hours" min="0" step="0.5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Ex: 20">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
+                                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="priority" value="Alta" class="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300">
+                                        <span class="ml-2 text-gray-700">Alta</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="priority" value="Média" class="h-4 w-4 text-yellow-600 focus:ring-yellow-500 border-gray-300" checked>
+                                        <span class="ml-2 text-gray-700">Média</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="priority" value="Baixa" class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300">
+                                        <span class="ml-2 text-gray-700">Baixa</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Tags Input (Needs JS for interaction) -->
+                            <div>
+                                <label for="course-tags-input" class="block text-sm font-medium text-gray-700 mb-1">Tags/Categorias</label>
+                                <div id="course-tags-container" class="flex flex-wrap gap-2 mb-2">
+                                    <!-- Tags added by JS -->
+                                </div>
+                                <div class="flex">
+                                    <input type="text" id="course-tags-input" class="flex-1 px-3 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Digite uma tag e Enter">
+                                     <button type="button" id="add-tag-button" class="px-4 py-2 bg-indigo-100 text-indigo-700 border-t border-r border-b border-gray-300 rounded-r-lg text-sm font-medium hover:bg-indigo-200">Adicionar</button>
+                                </div>
+                            </div>
+
+                             <!-- Progress Method (Optional) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Calcular Progresso Por:</label>
+                                <div class="flex flex-wrap gap-x-6 gap-y-2">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="progress-method" value="modules" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300" checked>
+                                        <span class="ml-2 text-gray-700">Módulos Concluídos</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="progress-method" value="time" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                                        <span class="ml-2 text-gray-700">Horas Estudadas</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <!-- Modules Input (Needs JS for interaction) -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Módulos/Aulas (Opcional)</label>
+                                <div id="modules-input-container" class="space-y-3 mb-3">
+                                    <!-- Module inputs added by JS -->
+                                    <p class="text-sm text-gray-500">Nenhum módulo adicionado.</p>
+                                </div>
+                                <button type="button" id="add-module-form-btn" class="text-indigo-600 hover:text-indigo-800 font-medium flex items-center text-sm">
+                                    <i class="fas fa-plus mr-2"></i>
+                                    Adicionar Módulo
+                                </button>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <div class="pt-4">
+                                <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition duration-150 ease-in-out">Salvar Curso</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Timer View (hidden by default) -->
+                <div id="timer-view" class="hidden">
+                    <div class="mb-6">
+                        <button id="back-from-timer" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm overflow-hidden p-6 sm:p-8 mb-8 text-center">
+                        <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Tempo de Estudo</h2>
+                        <p id="timer-course-context" class="text-gray-600 mb-6 text-sm sm:text-base">Selecione um curso para começar</p>
+
+                        <div id="timer-display" class="timer-display text-gray-800 mb-8">00:00:00</div>
+
+                        <div class="flex justify-center space-x-4 mb-8">
+                            <button id="timer-start-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50">
+                                <i class="fas fa-play text-xl"></i>
+                            </button>
+                            <button id="timer-pause-btn" class="bg-gray-200 hover:bg-gray-300 text-gray-700 w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50" disabled>
+                                <i class="fas fa-pause text-xl"></i>
+                            </button>
+                            <button id="timer-stop-btn" class="bg-red-500 hover:bg-red-600 text-white w-16 h-16 rounded-full flex items-center justify-center shadow-lg transition disabled:opacity-50" disabled>
+                                <i class="fas fa-stop text-xl"></i>
+                            </button>
+                        </div>
+
+                        <div class="mb-6 max-w-lg mx-auto">
+                            <label for="timer-notes" class="block text-sm font-medium text-gray-700 mb-2 text-left">Anotações sobre esta sessão (Opcional)</label>
+                            <textarea id="timer-notes" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" rows="3" placeholder="O que você estudou ou pontos importantes..."></textarea>
+                        </div>
+
+                        <button id="timer-finish-btn" class="w-full max-w-sm mx-auto bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-4 rounded-lg font-medium transition disabled:opacity-50" disabled>Finalizar e Salvar Sessão</button>
+                    </div>
+                </div>
+
+                <!-- Reports View (Placeholder Structure) -->
+                <div id="reports-view" class="hidden">
+                    <div class="mb-6">
+                        <button id="back-from-reports" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Relatórios e Estatísticas</h2>
+                    <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mb-6" role="alert">
+                        <p><i class="fas fa-wrench mr-2"></i>Esta seção ainda está em desenvolvimento.</p>
+                    </div>
+                    <!-- Placeholder content -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Gráfico: Tempo de Estudo</div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Gráfico: Cursos</div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Gráfico: Categorias</div>
+                        <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Resumo: Progresso</div>
+                    </div>
+                    <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Tabela: Histórico Completo</div>
+                </div>
+
+                <!-- Achievements View (Placeholder Structure) -->
+                <div id="achievements-view" class="hidden">
+                    <div class="mb-6">
+                        <button id="back-from-achievements" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Conquistas</h2>
+                     <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mb-6" role="alert">
+                        <p><i class="fas fa-wrench mr-2"></i>Esta seção ainda está em desenvolvimento.</p>
+                    </div>
+                    <!-- Placeholder content -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm min-h-[200px] flex items-center justify-center text-gray-400">Lista de Conquistas (Obtidas e Bloqueadas)</div>
+                </div>
+
+                <!-- Settings View (Placeholder Structure) -->
+                <div id="settings-view" class="hidden">
+                     <div class="mb-6">
+                        <button id="back-from-settings" class="flex items-center text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            Voltar
+                        </button>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-6">Configurações</h2>
+                     <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 rounded-md mb-6" role="alert">
+                        <p><i class="fas fa-wrench mr-2"></i>Esta seção ainda está em desenvolvimento.</p>
+                    </div>
+                    <!-- Placeholder content -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm divide-y divide-gray-200">
+                         <div class="py-4">Conta (Nome, Email, Senha, Exportar, Excluir)</div>
+                         <div class="py-4">Backup & Sincronização</div>
+                         <div class="py-4">Notificações</div>
+                         <div class="py-4">Aparência (Tema, Cor)</div>
+                         <div class="py-4">Metas de Estudo</div>
+                         <div class="py-4">Privacidade e Segurança</div>
+                         <div class="py-4">Ajuda e Suporte</div>
+                         <div class="py-4">Sobre</div>
+                    </div>
+                </div>
+
+            </main>
+
+            <!-- Bottom Navigation -->
+            <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40">
+                <div class="max-w-7xl mx-auto px-4">
+                    <div class="flex justify-around">
+                        <!-- Added data-view attributes -->
+                        <button data-view="dashboard" class="tab-active py-3 px-4 flex flex-col items-center text-xs font-medium w-1/4">
+                            <i class="fas fa-home text-lg mb-1"></i>
+                            <span>Início</span>
+                        </button>
+                        <button data-view="reports" class="py-3 px-4 flex flex-col items-center text-xs font-medium text-gray-500 w-1/4">
+                            <i class="far fa-chart-bar text-lg mb-1"></i>
+                            <span>Relatórios</span>
+                        </button>
+                        <button data-view="achievements" class="py-3 px-4 flex flex-col items-center text-xs font-medium text-gray-500 w-1/4">
+                            <i class="far fa-star text-lg mb-1"></i>
+                            <span>Conquistas</span>
+                        </button>
+                        <button data-view="settings" class="py-3 px-4 flex flex-col items-center text-xs font-medium text-gray-500 w-1/4">
+                            <i class="fas fa-cog text-lg mb-1"></i>
+                            <span>Ajustes</span> <!-- Changed name slightly -->
+                        </button>
+                    </div>
+                </div>
+            </nav>
+
+            <!-- Floating Add Button -->
+            <button id="floating-add-btn" class="floating-btn bg-indigo-600 hover:bg-indigo-700 text-white shadow-lg transition duration-150 ease-in-out" title="Adicionar novo curso">
+                <i class="fas fa-plus text-xl"></i>
+            </button>
+        </div> <!-- End #main-app -->
+    </div> <!-- End #app -->
+
+    <!-- ====================================================== -->
+    <!-- ============ START JAVASCRIPT CODE =================== -->
+    <!-- ====================================================== -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- STATE MANAGEMENT ---
+            let courses = [];
+            let settings = { // Default settings
+                userName: "Usuário",
+                weeklyGoal: 10, // hours
+                theme: 'light',
+                color: 'indigo',
+                seenOnboarding: false,
+                isLoggedIn: false // Simple login simulation
+                // Add more settings as needed: dailyGoal, notification preferences, etc.
+            };
+            let appState = {
+                currentView: 'loading', // Initial state before checks
+                activeCourseId: null,
+                editingCourseId: null, // To know if the form is for adding or editing
+                timer: {
+                    isRunning: false,
+                    intervalId: null,
+                    startTime: null, // Timestamp when started/resumed
+                    pausedTime: 0, // Total time paused during the session
+                    accumulatedSeconds: 0, // Seconds accumulated before last pause
+                    courseId: null,
+                    moduleId: null // Optional: Track module being timed
+                },
+                 onboarding: {
+                     currentSlide: 0 // Track onboarding slide index
+                 }
+            };
+
+            // --- CONSTANTS ---
+            // Changed Storage Keys
+            const STORAGE_KEY_DATA = 'percursoData_v1';
+            const STORAGE_KEY_LOGIN = 'percursoLoggedIn_v1';
+            const STORAGE_KEY_ONBOARDING = 'percursoOnboardingSeen_v1';
+
+            // --- DOM ELEMENTS (Cache frequently used elements) ---
+            const appElement = document.getElementById('app');
+            const onboardingScreen = document.getElementById('onboarding');
+            const loginScreen = document.getElementById('login-screen');
+            const mainAppScreen = document.getElementById('main-app');
+            const views = { // Object to hold view elements
+                dashboard: document.getElementById('dashboard-view'),
+                'course-detail': document.getElementById('course-detail-view'),
+                'add-course': document.getElementById('add-course-view'),
+                timer: document.getElementById('timer-view'),
+                reports: document.getElementById('reports-view'),
+                achievements: document.getElementById('achievements-view'),
+                settings: document.getElementById('settings-view')
+            };
+            const courseListContainer = document.getElementById('course-list-container');
+            const courseForm = document.getElementById('course-form');
+            const addEditTitle = document.getElementById('add-edit-title');
+            const floatingAddButton = document.getElementById('floating-add-btn');
+            const bottomNavButtons = document.querySelectorAll('nav[class*="bottom-0"] button');
+            const userMenuButton = document.getElementById('user-menu-button');
+            const userMenu = document.getElementById('user-menu');
+            const userNameHeader = document.getElementById('user-name-header');
+            const userNameGreeting = document.getElementById('user-name-greeting');
+            const userAvatar = document.getElementById('user-avatar');
+
+            // Timer elements
+            const timerDisplay = document.getElementById('timer-display');
+            const startTimerButton = document.getElementById('timer-start-btn');
+            const pauseTimerButton = document.getElementById('timer-pause-btn');
+            const stopTimerButton = document.getElementById('timer-stop-btn');
+            const finishTimerButton = document.getElementById('timer-finish-btn');
+            const timerCourseContext = document.getElementById('timer-course-context');
+            const timerNotes = document.getElementById('timer-notes');
+
+            // Detail View Elements (Cache important ones)
+            const detailCourseName = document.getElementById('detail-course-name');
+            const detailCoursePlatform = document.getElementById('detail-course-platform');
+            const detailCourseStatus = document.getElementById('detail-course-status');
+            const detailCourseLink = document.getElementById('detail-course-link');
+            const detailCourseUsername = document.getElementById('detail-course-username');
+            const copyUsernameBtn = document.getElementById('copy-username-btn');
+            const detailCourseTags = document.getElementById('detail-course-tags');
+            const detailCourseDeadline = document.getElementById('detail-course-deadline');
+            const detailCoursePriority = document.getElementById('detail-course-priority');
+            const detailCourseTotalHours = document.getElementById('detail-course-total-hours');
+            const detailProgressPercentage = document.getElementById('detail-progress-percentage');
+            const detailProgressHours = document.getElementById('detail-progress-hours');
+            const detailProgressBar = document.getElementById('detail-progress-bar');
+            const detailModulesList = document.getElementById('detail-modules-list');
+            const detailHistoryList = document.getElementById('detail-history-list');
+            const detailGeneralNotes = document.getElementById('detail-general-notes');
+            const saveGeneralNotesBtn = document.getElementById('save-general-notes-btn');
+            const detailStartTimerBtn = document.getElementById('detail-start-timer-btn');
+            const detailEditBtn = document.getElementById('detail-edit-btn');
+            const detailCompleteBtn = document.getElementById('detail-complete-btn');
+            const detailDeleteBtn = document.getElementById('detail-delete-btn');
+            const addModuleBtn = document.getElementById('add-module-btn'); // Button in detail view
+
+            // Form Elements
+            const courseIdInput = document.getElementById('courseId');
+            const courseNameInput = document.getElementById('course-name');
+            const courseLinkInput = document.getElementById('course-link');
+            const coursePlatformInput = document.getElementById('course-platform');
+            const courseUsernameInput = document.getElementById('course-username');
+            const courseDeadlineInput = document.getElementById('course-deadline');
+            const courseHoursInput = document.getElementById('course-hours');
+            const courseTagsInput = document.getElementById('course-tags-input');
+            const addTagButton = document.getElementById('add-tag-button');
+            const courseTagsContainer = document.getElementById('course-tags-container');
+            const modulesInputContainer = document.getElementById('modules-input-container');
+            const addModuleFormBtn = document.getElementById('add-module-form-btn'); // Button in form
+
+            // Onboarding elements
+            const onboardingCarousel = document.getElementById('onboarding-carousel')?.querySelector('.flex');
+            const onboardingIndicators = document.getElementById('onboarding-carousel')?.parentElement.querySelectorAll('.flex.justify-center button');
+            const nextOnboardingButton = document.getElementById('next-onboarding');
+            const skipOnboardingButton = document.getElementById('skip-onboarding');
+
+            // --- LOCAL STORAGE ---
+            function loadData() {
+                try {
+                    const savedData = localStorage.getItem(STORAGE_KEY_DATA); // Uses new key
+                    if (savedData) {
+                        const data = JSON.parse(savedData);
+                        courses = data.courses || [];
+                        settings = { ...settings, ...(data.settings || {}) };
+                        console.log("Data loaded from localStorage (Percurso):", { courses, settings });
+                    } else {
+                         console.log("No Percurso data found in localStorage, using defaults.");
+                    }
+                    settings.isLoggedIn = localStorage.getItem(STORAGE_KEY_LOGIN) === 'true'; // Uses new key
+                    settings.seenOnboarding = localStorage.getItem(STORAGE_KEY_ONBOARDING) === 'true'; // Uses new key
+                } catch (error) {
+                    console.error("Error loading Percurso data from localStorage:", error);
+                    courses = [];
+                }
+            }
+
+            function saveData() {
+                try {
+                    const dataToSave = { courses, settings };
+                    localStorage.setItem(STORAGE_KEY_DATA, JSON.stringify(dataToSave)); // Uses new key
+                    localStorage.setItem(STORAGE_KEY_LOGIN, settings.isLoggedIn ? 'true' : 'false'); // Uses new key
+                    localStorage.setItem(STORAGE_KEY_ONBOARDING, settings.seenOnboarding ? 'true' : 'false'); // Uses new key
+                } catch (error) {
+                    console.error("Error saving Percurso data to localStorage:", error);
+                    alert("Houve um erro ao salvar seus dados. Verifique o espaço de armazenamento do navegador.");
+                }
+            }
+
+            // --- VIEW MANAGEMENT ---
+            function showView(viewId) {
+                console.log("Attempting to show view:", viewId);
+                if (!viewId || viewId === 'loading') {
+                    console.warn("Invalid viewId provided or still loading.");
+                    return;
+                }
+                const targetViewId = determineCorrectView(viewId);
+                if (!targetViewId) {
+                     console.error("Could not determine target view.");
+                     return;
+                }
+                appState.currentView = targetViewId;
+
+                onboardingScreen.style.display = 'none';
+                loginScreen.style.display = 'none';
+                mainAppScreen.style.display = 'none';
+                Object.values(views).forEach(viewElement => {
+                     if (viewElement) viewElement.classList.add('hidden');
+                     else console.warn("A view element is null/undefined in the 'views' object");
+                 });
+
+                if (targetViewId === 'onboarding') {
+                    onboardingScreen.style.display = 'flex';
+                } else if (targetViewId === 'login') {
+                    loginScreen.style.display = 'flex';
+                } else if (views[targetViewId]) {
+                    mainAppScreen.style.display = 'block';
+                    views[targetViewId].classList.remove('hidden');
+                    updateBottomNav(targetViewId);
+                    window.scrollTo(0, 0);
+                } else {
+                    console.error(`View "${targetViewId}" not found or not registered.`);
+                    if(settings.isLoggedIn) {
+                        mainAppScreen.style.display = 'block';
+                        views.dashboard.classList.remove('hidden');
+                        appState.currentView = 'dashboard';
+                        updateBottomNav('dashboard');
+                    } else {
+                         loginScreen.style.display = 'flex';
+                         appState.currentView = 'login';
+                    }
+                }
+                 console.log("Current view set to:", appState.currentView);
+            }
+
+             function determineCorrectView(requestedViewId) {
+                 if (!settings.seenOnboarding && requestedViewId !== 'onboarding') return 'onboarding';
+                 if (settings.seenOnboarding && !settings.isLoggedIn && requestedViewId !== 'login' && requestedViewId !== 'onboarding') return 'login';
+                 return requestedViewId;
+             }
+
+            function updateBottomNav(activeView) {
+                bottomNavButtons.forEach(button => {
+                    const buttonView = button.getAttribute('data-view');
+                    button.classList.remove('tab-active', 'text-indigo-600');
+                    button.classList.add('text-gray-500');
+                    if (buttonView === activeView) {
+                        button.classList.add('tab-active', 'text-indigo-600');
+                        button.classList.remove('text-gray-500');
+                    }
+                });
+            }
+
+            // --- RENDERING ---
+            function updateUserInfoUI() {
+                if (settings.userName) {
+                    const initials = settings.userName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() || 'U';
+                    if (userNameHeader) userNameHeader.textContent = settings.userName;
+                    if (userNameGreeting) userNameGreeting.textContent = settings.userName.split(' ')[0];
+                    if (userAvatar) userAvatar.textContent = initials;
+                }
+            }
+
+            function calculateProgress(course) {
+                 if (!course) return 0;
+                 if (course.progressMethod === 'time') {
+                     const totalSeconds = (course.totalHours || 0) * 3600;
+                     const studiedSeconds = course.studiedTime || 0;
+                     return totalSeconds > 0 ? Math.min(100, Math.round((studiedSeconds / totalSeconds) * 100)) : 0;
+                 } else {
+                     const totalModules = course.modules?.length || 0;
+                     if (totalModules === 0) return 0;
+                     const completedModules = course.modules?.filter(m => m.completed).length || 0;
+                     return Math.round((completedModules / totalModules) * 100);
+                 }
+             }
+
+            function renderDashboard() {
+                 if (!views.dashboard) return;
+                 updateUserInfoUI();
+                 courseListContainer.innerHTML = '';
+
+                 const sortedCourses = [...courses]; // Apply sorting later
+
+                 if (sortedCourses.length === 0) {
+                     courseListContainer.innerHTML = `
+                         <div class="md:col-span-2 lg:col-span-3 text-center p-10 bg-white rounded-xl shadow-sm">
+                             <i class="fas fa-graduation-cap text-4xl text-gray-400 mb-4"></i>
+                             <p class="text-gray-500">Nenhum curso adicionado ainda.</p>
+                             <p class="text-gray-400 text-sm mt-2">Clique no botão <span class="inline-block bg-indigo-600 text-white rounded-full w-5 h-5 leading-5 text-center mx-1">+</span> para começar!</p>
+                         </div>`;
+                 } else {
+                     sortedCourses.forEach(course => {
+                         const progress = calculateProgress(course);
+                         const studiedSeconds = course.studiedTime || 0;
+                         const totalSeconds = (course.totalHours || 0) * 3600;
+                         const hoursStudied = (studiedSeconds / 3600).toFixed(1);
+                         const hoursRemaining = totalSeconds > 0 ? Math.max(0, (totalSeconds - studiedSeconds) / 3600).toFixed(1) : 'N/A';
+                         const lastStudiedDate = course.lastStudied ? new Date(course.lastStudied).toLocaleDateString() : 'Nunca';
+                         let statusText = "Não iniciado";
+                         let statusColor = "bg-gray-100 text-gray-800";
+                         if (progress > 0 && progress < 100) { statusText = "Em andamento"; statusColor = "bg-yellow-100 text-yellow-800"; }
+                         else if (progress >= 100) { statusText = "Concluído"; statusColor = "bg-green-100 text-green-800"; }
+
+                         const courseCardHTML = `
+                             <div class="course-card flex flex-col bg-white rounded-xl shadow-sm overflow-hidden transition-all duration-200" data-course-id="${course.id}">
+                                 <div class="p-5 sm:p-6 flex-grow">
+                                     <div class="flex justify-between items-start mb-2 gap-2">
+                                         <div>
+                                             <h3 class="font-bold text-lg text-gray-900 leading-tight">${course.name || 'Curso Sem Nome'}</h3>
+                                             <p class="text-sm text-gray-500">${course.platform || 'N/A'}</p>
+                                         </div>
+                                         <span class="px-2 py-1 ${statusColor} text-xs rounded-full font-medium whitespace-nowrap">${progress}%</span>
+                                     </div>
+                                     <div class="progress-bar mb-3">
+                                         <div class="progress-fill" style="width: ${progress}%"></div>
+                                     </div>
+                                     <div class="flex justify-between text-xs sm:text-sm text-gray-500 mb-3">
+                                         <span>${hoursStudied}h estudadas</span>
+                                         <span>${hoursRemaining !== 'N/A' ? hoursRemaining + 'h restantes' : ''}</span>
+                                     </div>
+                                     <div class="flex items-center text-xs text-gray-500">
+                                         <i class="far fa-clock mr-1.5"></i>
+                                         <span>Último estudo: ${lastStudiedDate}</span>
+                                     </div>
+                                 </div>
+                                 <div class="bg-gray-50 px-5 py-3 flex justify-between border-t border-gray-100">
+                                     <button class="details-btn text-indigo-600 hover:text-indigo-800 text-sm font-medium" data-course-id="${course.id}">Detalhes</button>
+                                     <button class="continue-btn text-indigo-600 hover:text-indigo-800 text-sm font-medium" data-course-id="${course.id}">
+                                         ${progress < 100 ? 'Continuar' : 'Revisar'} <i class="fas fa-arrow-right ml-1 text-xs"></i>
+                                     </button>
+                                 </div>
+                             </div>
+                         `;
+                         courseListContainer.insertAdjacentHTML('beforeend', courseCardHTML);
+                     });
+                 }
+
+                 const addCourseCardHTML = `
+                     <div id="add-course-card" class="course-card bg-white rounded-xl shadow-sm overflow-hidden border-2 border-dashed border-gray-300 flex flex-col items-center justify-center p-6 transition-all duration-200 hover:border-indigo-400 hover:bg-gray-50 cursor-pointer min-h-[200px]">
+                         <i class="fas fa-plus text-3xl text-gray-400 mb-2"></i>
+                         <h3 class="text-lg font-medium text-gray-700 text-center">Adicionar Novo Curso</h3>
+                     </div>
+                 `;
+                 courseListContainer.insertAdjacentHTML('beforeend', addCourseCardHTML);
+                 attachDashboardCardListeners();
+             }
+
+             function attachDashboardCardListeners() {
+                 document.getElementById('add-course-card')?.addEventListener('click', handleAddCourseClick);
+                 document.querySelectorAll('.details-btn').forEach(button => {
+                     button.addEventListener('click', handleCourseDetailClick);
+                 });
+                 document.querySelectorAll('.continue-btn').forEach(button => {
+                     button.addEventListener('click', handleCourseDetailClick);
+                 });
+             }
+
+             function renderCourseDetails(courseId) {
+                 const course = courses.find(c => c.id === courseId);
+                 if (!course || !views['course-detail']) {
+                     console.error("Course not found or detail view missing:", courseId);
+                     showView('dashboard');
+                     return;
+                 }
+                 appState.activeCourseId = courseId;
+
+                 detailCourseName.textContent = course.name;
+                 detailCoursePlatform.textContent = course.platform || 'N/A';
+                 const progress = calculateProgress(course);
+                 let statusText = "Não iniciado";
+                 let statusColor = "bg-gray-100 text-gray-800";
+                  if (progress > 0 && progress < 100) { statusText = "Em andamento"; statusColor = "bg-yellow-100 text-yellow-800"; }
+                  else if (progress >= 100) { statusText = "Concluído"; statusColor = "bg-green-100 text-green-800"; }
+                 detailCourseStatus.textContent = statusText;
+                 detailCourseStatus.className = `px-3 py-1 ${statusColor} rounded-full text-sm font-medium whitespace-nowrap`;
+
+                 detailCourseLink.href = course.link || '#';
+                 detailCourseLink.textContent = course.link ? (course.link.length > 30 ? course.link.substring(0, 27) + '...' : course.link) : 'Nenhum link';
+                 detailCourseLink.target = course.link ? '_blank' : '_self';
+                 detailCourseLink.title = course.link || 'Nenhum link adicionado';
+                 detailCourseUsername.textContent = course.username || 'Nenhum usuário';
+                 copyUsernameBtn.style.display = course.username ? 'inline-block' : 'none';
+                 renderTags(detailCourseTags, course.tags || []);
+                 detailCourseDeadline.textContent = course.deadline ? new Date(course.deadline + 'T00:00:00').toLocaleDateString() : 'Nenhuma';
+                 renderPriorityBadge(detailCoursePriority, course.priority);
+                 detailCourseTotalHours.textContent = course.totalHours ? `${course.totalHours} horas` : 'N/A';
+
+                 const studiedSeconds = course.studiedTime || 0;
+                 const totalSeconds = (course.totalHours || 0) * 3600;
+                 const hoursStudied = (studiedSeconds / 3600).toFixed(1);
+                 const totalHoursFormatted = (totalSeconds / 3600).toFixed(1);
+                 detailProgressPercentage.textContent = `${progress}% concluído`;
+                 detailProgressHours.textContent = totalSeconds > 0 ? `${hoursStudied}h / ${totalHoursFormatted}h` : `${hoursStudied}h estudadas`;
+                 detailProgressBar.style.width = `${progress}%`;
+
+                 renderModulesList(detailModulesList, course.modules || [], course.id);
+                 renderHistoryTable(detailHistoryList, course.studyHistory || []);
+                 detailGeneralNotes.value = course.generalNotes || '';
+
+                 detailCompleteBtn.textContent = progress >= 100 ? 'Marcar Não Concluído' : 'Marcar Concluído';
+                 detailCompleteBtn.classList.toggle('border-green-300', progress >= 100);
+                 detailCompleteBtn.classList.toggle('text-green-600', progress >= 100);
+                 detailCompleteBtn.classList.toggle('hover:bg-green-50', progress >= 100);
+                 detailCompleteBtn.classList.toggle('border-gray-300', progress < 100);
+                 detailCompleteBtn.classList.toggle('hover:bg-gray-50', progress < 100);
+             }
+
+             function renderTags(container, tags) {
+                 container.innerHTML = '';
+                 if (tags && tags.length > 0) {
+                     tags.forEach(tag => {
+                         const tagElement = document.createElement('span');
+                         const colors = ['bg-blue-100 text-blue-800', 'bg-purple-100 text-purple-800', 'bg-green-100 text-green-800', 'bg-yellow-100 text-yellow-800', 'bg-pink-100 text-pink-800'];
+                         const colorClass = colors[Math.floor(Math.random() * colors.length)];
+                         tagElement.className = `px-2 py-0.5 ${colorClass} rounded-full text-xs font-medium`;
+                         tagElement.textContent = tag;
+                         container.appendChild(tagElement);
+                     });
+                 } else {
+                     container.innerHTML = '<span class="text-gray-400 text-xs">Nenhuma tag</span>';
+                 }
+             }
+             function renderPriorityBadge(container, priority) {
+                 let badgeClass = 'bg-gray-100 text-gray-800';
+                 if (priority === 'Alta') badgeClass = 'bg-red-100 text-red-800';
+                 else if (priority === 'Média') badgeClass = 'bg-yellow-100 text-yellow-800';
+                 else if (priority === 'Baixa') badgeClass = 'bg-blue-100 text-blue-800';
+                 container.innerHTML = `<span class="px-2 py-0.5 ${badgeClass} rounded-full text-xs font-medium">${priority || 'N/D'}</span>`;
+             }
+
+             function renderModulesList(container, modules, courseId) {
+                 container.innerHTML = '';
+                 if (modules && modules.length > 0) {
+                     modules.forEach((module, index) => {
+                         const moduleHTML = `
+                             <div class="border border-gray-200 rounded-lg overflow-hidden bg-white">
+                                 <div class="bg-gray-50 px-4 py-3 flex justify-between items-center">
+                                     <div class="flex items-center">
+                                         <input type="checkbox" class="module-checkbox rounded text-indigo-600 focus:ring-indigo-500 mr-3 cursor-pointer" data-course-id="${courseId}" data-module-index="${index}" ${module.completed ? 'checked' : ''}>
+                                         <h4 class="font-medium text-sm">${module.name || `Módulo ${index + 1}`}</h4>
+                                     </div>
+                                     ${module.hours ? `<div class="flex items-center text-xs text-gray-500"><i class="far fa-clock mr-1"></i><span>${module.hours}h</span></div>` : ''}
+                                 </div>
+                                  ${module.completed && module.completedDate ? `<div class="p-3 bg-white text-xs text-gray-500 border-t border-gray-100"><i class="far fa-calendar-check mr-1"></i> Concluído em: ${new Date(module.completedDate).toLocaleDateString()}</div>` : ''}
+                             </div>`;
+                         container.insertAdjacentHTML('beforeend', moduleHTML);
+                     });
+                 } else {
+                     container.innerHTML = '<p class="text-gray-500 text-sm px-4 py-2">Nenhum módulo adicionado.</p>';
+                 }
+                 attachModuleCheckboxListeners();
+             }
+
+              function renderHistoryTable(tbody, history) {
+                 tbody.innerHTML = '';
+                 if (history && history.length > 0) {
+                     const sortedHistory = [...history].sort((a, b) => new Date(b.date) - new Date(a.date));
+                     sortedHistory.forEach(entry => {
+                         const durationFormatted = formatTime(entry.durationSeconds || 0);
+                         const dateFormatted = new Date(entry.date).toLocaleDateString();
+                         const notesShort = entry.notes ? (entry.notes.length > 40 ? entry.notes.substring(0, 37) + '...' : entry.notes) : '-';
+                         const rowHTML = `
+                             <tr>
+                                 <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm text-gray-500 sm:pl-6">${dateFormatted}</td>
+                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 font-medium">${durationFormatted}</td>
+                                 <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 hidden sm:table-cell">${entry.moduleName || '-'}</td>
+                                 <td class="px-3 py-4 text-sm text-gray-500" title="${entry.notes || ''}">${notesShort}</td>
+                             </tr>`;
+                         tbody.insertAdjacentHTML('beforeend', rowHTML);
+                     });
+                 } else {
+                     tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4 text-gray-500">Nenhuma sessão registrada.</td></tr>';
+                 }
+             }
+
+            // --- ACTIONS ---
+             function handleAddCourseClick() {
+                 appState.editingCourseId = null;
+                 addEditTitle.textContent = "Adicionar Novo Curso";
+                 courseForm.reset();
+                 courseIdInput.value = '';
+                 renderTagsInput(courseTagsContainer, []);
+                 modulesInputContainer.innerHTML = '<p class="text-sm text-gray-500">Nenhum módulo adicionado.</p>'; // Reset modules
+                 showView('add-course');
+             }
+
+              function handleCourseDetailClick(event) {
+                 const courseId = event.target.closest('.course-card, button').getAttribute('data-course-id');
+                 if (courseId) {
+                     renderCourseDetails(courseId);
+                     showView('course-detail');
+                 }
+             }
+
+             function handleCourseFormSubmit(event) {
+                 event.preventDefault();
+                 const formData = new FormData(event.target);
+                 const id = formData.get('courseId');
+
+                 const courseData = {
+                     id: id || Date.now().toString(),
+                     name: formData.get('course-name')?.trim() || 'Curso Sem Título',
+                     link: formData.get('course-link')?.trim() || '',
+                     platform: formData.get('course-platform')?.trim() || '',
+                     username: formData.get('course-username')?.trim() || '',
+                     tags: Array.from(courseTagsContainer.querySelectorAll('span[data-tag-name]')).map(span => span.getAttribute('data-tag-name')),
+                     deadline: formData.get('course-deadline') || null,
+                     priority: formData.get('priority') || 'Média',
+                     totalHours: parseFloat(formData.get('course-hours')) || 0,
+                     progressMethod: formData.get('progress-method') || 'modules',
+                     modules: Array.from(modulesInputContainer.querySelectorAll('.module-input-group')).map(group => ({
+                         name: group.querySelector('input[placeholder*="Nome"]').value.trim(),
+                         hours: parseFloat(group.querySelector('input[placeholder*="Horas"]').value) || null,
+                         completed: id ? (courses.find(c=>c.id===id)?.modules?.find(m => m.name === group.querySelector('input[placeholder*="Nome"]').value.trim())?.completed || false) : false,
+                         completedDate: id ? (courses.find(c=>c.id===id)?.modules?.find(m => m.name === group.querySelector('input[placeholder*="Nome"]').value.trim())?.completedDate || null) : null
+                     })),
+                     studiedTime: id ? (courses.find(c => c.id === id)?.studiedTime || 0) : 0,
+                     studyHistory: id ? (courses.find(c => c.id === id)?.studyHistory || []) : [],
+                     generalNotes: id ? (courses.find(c => c.id === id)?.generalNotes || '') : '',
+                     createdAt: id ? (courses.find(c => c.id === id)?.createdAt || new Date().toISOString()) : new Date().toISOString(),
+                     lastStudied: id ? (courses.find(c => c.id === id)?.lastStudied || null) : null
+                 };
+
+                  if (id) {
+                      const index = courses.findIndex(c => c.id === id);
+                      if (index > -1) {
+                           const originalCourse = courses[index];
+                           if (originalCourse.modules.length === courseData.modules.length) {
+                               courseData.modules.forEach((newModule, idx) => {
+                                   const oldModule = originalCourse.modules.find(om => om.name === newModule.name) || originalCourse.modules[idx];
+                                   if (oldModule) {
+                                       newModule.completed = oldModule.completed;
+                                       newModule.completedDate = oldModule.completedDate;
+                                   }
+                               });
+                           }
+                          courses[index] = courseData;
+                          console.log("Course updated:", courseData);
+                      } else {
+                           console.error("Could not find course to update with ID:", id);
+                      }
+                  } else {
+                      courses.push(courseData);
+                      console.log("Course added:", courseData);
+                  }
+
+                  saveData();
+                  renderDashboard();
+                  if (id) {
+                      renderCourseDetails(id);
+                      showView('course-detail');
+                  } else {
+                      showView('dashboard');
+                  }
+                  event.target.reset();
+                  appState.editingCourseId = null;
+             }
+
+            function renderTagsInput(container, tags) {
+                 container.innerHTML = '';
+                 tags.forEach(tag => {
+                     const tagElement = document.createElement('span');
+                     tagElement.className = 'tag-item px-2 py-1 bg-indigo-100 text-indigo-800 rounded-full text-xs font-medium flex items-center';
+                      tagElement.setAttribute('data-tag-name', tag);
+                     tagElement.innerHTML = `
+                         ${tag}
+                         <button type="button" class="remove-tag-btn ml-1.5 text-indigo-600 hover:text-indigo-800 focus:outline-none">
+                             <i class="fas fa-times text-xs"></i>
+                         </button>
+                     `;
+                     container.appendChild(tagElement);
+                 });
+                  container.querySelectorAll('.remove-tag-btn').forEach(btn => {
+                      btn.addEventListener('click', handleRemoveTag);
+                  });
+             }
+
+            function handleAddTag() {
+                 const tagName = courseTagsInput.value.trim();
+                 if (tagName) {
+                     const currentTags = Array.from(courseTagsContainer.querySelectorAll('span[data-tag-name]')).map(span => span.getAttribute('data-tag-name'));
+                     if (!currentTags.includes(tagName)) {
+                         currentTags.push(tagName);
+                         renderTagsInput(courseTagsContainer, currentTags);
+                     }
+                     courseTagsInput.value = '';
+                 }
+             }
+             function handleRemoveTag(event) {
+                 const tagToRemove = event.target.closest('.tag-item');
+                 if (tagToRemove) {
+                     tagToRemove.remove();
+                 }
+             }
+
+            function renderModulesInput(container, modules) {
+                 const placeholder = container.querySelector('p');
+                 if (modules.length > 0 && placeholder) placeholder.style.display = 'none';
+                 else if (modules.length === 0 && !placeholder) {
+                      container.insertAdjacentHTML('beforeend', '<p class="text-sm text-gray-500">Nenhum módulo adicionado.</p>');
+                 } else if (modules.length === 0 && placeholder) {
+                      placeholder.style.display = 'block';
+                 }
+
+                 modules.forEach((module, index) => {
+                      if (!container.querySelector(`input[value="${module.name}"]`)) { // Simple check if name exists
+                          addModuleInputRow(container, module.name, module.hours, index);
+                      }
+                 });
+             }
+
+            function addModuleInputRow(container, name = '', hours = '', index = -1) {
+                 const moduleIndex = (index === -1) ? container.querySelectorAll('.module-input-group').length : index;
+                 const newModuleHTML = `
+                     <div class="module-input-group flex items-center gap-2">
+                         <input type="text" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Módulo ${moduleIndex + 1} Nome" value="${name}">
+                         <input type="number" min="0" step="0.1" class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm" placeholder="Horas (opc)" value="${hours || ''}">
+                         <button type="button" class="remove-module-btn text-red-500 hover:text-red-700 focus:outline-none p-2" title="Remover Módulo">
+                             <i class="fas fa-times"></i>
+                         </button>
+                     </div>`;
+                 const placeholder = container.querySelector('p');
+                 if(placeholder) placeholder.style.display = 'none';
+                 container.insertAdjacentHTML('beforeend', newModuleHTML);
+                 container.querySelector('.module-input-group:last-child .remove-module-btn')?.addEventListener('click', handleRemoveModuleInput);
+             }
+
+             function handleRemoveModuleInput(event) {
+                 const moduleGroup = event.target.closest('.module-input-group');
+                 if (moduleGroup) {
+                     moduleGroup.remove();
+                     const container = document.getElementById('modules-input-container');
+                     if (container && container.querySelectorAll('.module-input-group').length === 0) {
+                         const placeholder = container.querySelector('p');
+                          if (placeholder) placeholder.style.display = 'block';
+                          else container.insertAdjacentHTML('beforeend', '<p class="text-sm text-gray-500">Nenhum módulo adicionado.</p>');
+                     }
+                 }
+             }
+
+              function handleEditCourseClick() {
+                 if (!appState.activeCourseId) return;
+                 const course = courses.find(c => c.id === appState.activeCourseId);
+                 if (!course) return;
+                 appState.editingCourseId = course.id;
+
+                 addEditTitle.textContent = "Editar Curso";
+                 courseIdInput.value = course.id;
+                 courseNameInput.value = course.name;
+                 courseLinkInput.value = course.link || '';
+                 coursePlatformInput.value = course.platform || '';
+                 courseUsernameInput.value = course.username || '';
+                 courseDeadlineInput.value = course.deadline || '';
+                 courseHoursInput.value = course.totalHours || '';
+                 courseForm.querySelector(`input[name="priority"][value="${course.priority || 'Média'}"]`).checked = true;
+                 courseForm.querySelector(`input[name="progress-method"][value="${course.progressMethod || 'modules'}"]`).checked = true;
+                  renderTagsInput(courseTagsContainer, course.tags || []);
+                 modulesInputContainer.innerHTML = ''; // Clear before render
+                 renderModulesInput(modulesInputContainer, course.modules || []);
+
+                 showView('add-course');
+             }
+
+             function handleMarkCompleteClick() {
+                 if (!appState.activeCourseId) return;
+                 const courseIndex = courses.findIndex(c => c.id === appState.activeCourseId);
+                 if (courseIndex > -1) {
+                      const course = courses[courseIndex];
+                      const currentProgress = calculateProgress(course);
+                      const nowCompleted = currentProgress < 100;
+
+                      course.modules = course.modules.map(m => ({ ...m, completed: nowCompleted, completedDate: nowCompleted ? new Date().toISOString() : null }));
+                      course.lastStudied = new Date().toISOString();
+                      saveData();
+                      renderCourseDetails(appState.activeCourseId);
+                 }
+             }
+
+             function handleDeleteCourseClick() {
+                 if (!appState.activeCourseId) return;
+                 const course = courses.find(c => c.id === appState.activeCourseId);
+                 if (!course) return;
+                 if (confirm(`Tem certeza que deseja excluir o curso "${course.name}"?\n\nEsta ação não pode ser desfeita.`)) {
+                     courses = courses.filter(c => c.id !== appState.activeCourseId);
+                     saveData();
+                     renderDashboard();
+                     showView('dashboard');
+                     appState.activeCourseId = null;
+                 }
+             }
+
+             function handleModuleCheckboxToggle(event) {
+                  if (!event.target.classList.contains('module-checkbox')) return;
+                  const checkbox = event.target;
+                  const courseId = checkbox.getAttribute('data-course-id');
+                  const moduleIndex = parseInt(checkbox.getAttribute('data-module-index'));
+                  const courseIndex = courses.findIndex(c => c.id === courseId);
+                   if (courseIndex > -1 && moduleIndex >= 0) {
+                       const course = courses[courseIndex];
+                       if (course.modules && course.modules[moduleIndex]) {
+                           const isCompleted = checkbox.checked;
+                           course.modules[moduleIndex].completed = isCompleted;
+                           course.modules[moduleIndex].completedDate = isCompleted ? new Date().toISOString() : null;
+                            course.lastStudied = new Date().toISOString();
+                           saveData();
+                           renderCourseDetails(courseId);
+                       }
+                   }
+             }
+
+              function attachModuleCheckboxListeners() {
+                 detailModulesList.querySelectorAll('.module-checkbox').forEach(checkbox => {
+                     checkbox.removeEventListener('change', handleModuleCheckboxToggle);
+                     checkbox.addEventListener('change', handleModuleCheckboxToggle);
+                 });
+             }
+
+              function handleSaveGeneralNotes() {
+                 if (!appState.activeCourseId) return;
+                 const courseIndex = courses.findIndex(c => c.id === appState.activeCourseId);
+                 if (courseIndex > -1) {
+                      courses[courseIndex].generalNotes = detailGeneralNotes.value;
+                      saveData();
+                      const originalText = saveGeneralNotesBtn.textContent;
+                      saveGeneralNotesBtn.textContent = 'Salvo!';
+                      saveGeneralNotesBtn.classList.add('bg-green-500', 'hover:bg-green-600');
+                      saveGeneralNotesBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+                      setTimeout(() => {
+                          saveGeneralNotesBtn.textContent = originalText;
+                          saveGeneralNotesBtn.classList.remove('bg-green-500', 'hover:bg-green-600');
+                          saveGeneralNotesBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+                      }, 1500);
+                 }
+             }
+
+             function handleCopyUsername() {
+                  const username = detailCourseUsername.textContent;
+                  if (username && username !== 'Nenhum usuário') {
+                      navigator.clipboard.writeText(username).then(() => {
+                           alert('Usuário copiado para a área de transferência!');
+                      }).catch(err => {
+                          console.error('Erro ao copiar usuário: ', err);
+                          alert('Não foi possível copiar o usuário.');
+                      });
+                  }
+             }
+
+            // --- TIMER LOGIC ---
+             function formatTime(totalSeconds) {
+                 const hours = Math.floor(totalSeconds / 3600);
+                 const minutes = Math.floor((totalSeconds % 3600) / 60);
+                 const seconds = Math.floor(totalSeconds % 60);
+                 return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+             }
+
+             function updateTimerDisplay() {
+                 const now = Date.now();
+                  const elapsedSinceStart = appState.timer.startTime ? (now - appState.timer.startTime) / 1000 : 0;
+                  const currentSessionSeconds = appState.timer.accumulatedSeconds + elapsedSinceStart;
+                 timerDisplay.textContent = formatTime(currentSessionSeconds);
+             }
+
+             function startTimer() {
+                 if (appState.timer.isRunning || !appState.timer.courseId) return;
+                 appState.timer.isRunning = true;
+                 appState.timer.startTime = Date.now();
+                 if (!appState.timer.intervalId) {
+                     appState.timer.intervalId = setInterval(updateTimerDisplay, 1000);
+                 }
+                 updateTimerDisplay();
+                 startTimerButton.disabled = true;
+                 pauseTimerButton.disabled = false;
+                 stopTimerButton.disabled = false;
+                 finishTimerButton.disabled = false;
+                 console.log("Timer started/resumed for course:", appState.timer.courseId);
+             }
+
+             function pauseTimer() {
+                 if (!appState.timer.isRunning) return;
+                 appState.timer.isRunning = false;
+                 const now = Date.now();
+                  const elapsed = (now - appState.timer.startTime) / 1000;
+                  appState.timer.accumulatedSeconds += elapsed;
+                 appState.timer.startTime = null;
+                 if (appState.timer.intervalId) {
+                     clearInterval(appState.timer.intervalId);
+                     appState.timer.intervalId = null;
+                 }
+                 startTimerButton.disabled = false;
+                 pauseTimerButton.disabled = true;
+                 stopTimerButton.disabled = false;
+                 finishTimerButton.disabled = false;
+                 console.log("Timer paused. Accumulated:", appState.timer.accumulatedSeconds);
+             }
+
+             function stopTimerAndDiscard() {
+                 if (appState.timer.intervalId) clearInterval(appState.timer.intervalId);
+                 appState.timer = { isRunning: false, intervalId: null, startTime: null, pausedTime: 0, accumulatedSeconds: 0, courseId: null, moduleId: null };
+                 timerDisplay.textContent = "00:00:00";
+                 timerCourseContext.textContent = "Selecione um curso para começar";
+                 timerNotes.value = '';
+                 startTimerButton.disabled = true;
+                 pauseTimerButton.disabled = true;
+                 stopTimerButton.disabled = true;
+                 finishTimerButton.disabled = true;
+                 console.log("Timer stopped and discarded.");
+                 if (appState.activeCourseId) {
+                      renderCourseDetails(appState.activeCourseId);
+                     showView('course-detail');
+                 } else {
+                      renderDashboard();
+                     showView('dashboard');
+                 }
+             }
+
+              function finishTimerSession() {
+                 if (appState.timer.isRunning) pauseTimer();
+                 const durationSeconds = appState.timer.accumulatedSeconds;
+                 const courseIdToSave = appState.timer.courseId;
+                 const notes = timerNotes.value.trim();
+                  if (durationSeconds < 1) {
+                       alert("Sessão muito curta para ser salva.");
+                       stopTimerAndDiscard();
+                       return;
+                  }
+                 if (courseIdToSave) {
+                     const courseIndex = courses.findIndex(c => c.id === courseIdToSave);
+                     if (courseIndex > -1) {
+                         const course = courses[courseIndex];
+                         const historyEntry = { date: new Date().toISOString(), durationSeconds: Math.round(durationSeconds), notes: notes, moduleName: appState.timer.moduleId ? course.modules?.find(m => m.id === appState.timer.moduleId)?.name : null };
+                         if (!course.studyHistory) course.studyHistory = [];
+                         course.studyHistory.push(historyEntry);
+                         if (!course.studiedTime) course.studiedTime = 0;
+                         course.studiedTime += Math.round(durationSeconds);
+                         course.lastStudied = new Date().toISOString();
+                         saveData();
+                         console.log(`Timer finished. Saved ${formatTime(durationSeconds)} for course ${courseIdToSave}. Notes: ${notes}`);
+                          alert(`Sessão de ${formatTime(durationSeconds)} registrada para o curso "${course.name}"!`);
+                     } else {
+                         console.error("Course not found to save timer session:", courseIdToSave);
+                         alert("Erro: Curso não encontrado para salvar a sessão.");
+                     }
+                 }
+                 stopTimerAndDiscard();
+             }
+
+            // --- ONBOARDING LOGIC ---
+             function setupOnboarding() {
+                  updateOnboardingUI();
+                  nextOnboardingButton?.addEventListener('click', () => {
+                      if (appState.onboarding.currentSlide < 2) {
+                          appState.onboarding.currentSlide++;
+                          updateOnboardingUI();
+                      } else {
+                          completeOnboarding();
+                      }
+                  });
+                  skipOnboardingButton?.addEventListener('click', completeOnboarding);
+             }
+
+             function updateOnboardingUI() {
+                  const currentSlide = appState.onboarding.currentSlide;
+                  if (!onboardingCarousel || !onboardingIndicators) return;
+                   const offset = -currentSlide * 100;
+                   onboardingCarousel.style.transform = `translateX(${offset}%)`;
+                   onboardingIndicators.forEach((button, index) => {
+                       button.classList.toggle('bg-indigo-600', index === currentSlide);
+                       button.classList.toggle('bg-indigo-200', index !== currentSlide);
+                   });
+                   if (currentSlide === 2) {
+                       nextOnboardingButton.textContent = "Começar a usar!";
+                   } else {
+                       nextOnboardingButton.textContent = "Próximo";
+                   }
+             }
+
+             function completeOnboarding() {
+                 settings.seenOnboarding = true;
+                 saveData();
+                 if (!settings.isLoggedIn) {
+                     showView('login');
+                 } else {
+                      renderDashboard();
+                     showView('dashboard');
+                 }
+             }
+
+            // --- LOGIN/LOGOUT SIMULATION ---
+             function handleLogin(event) {
+                 if (event) event.preventDefault();
+                 const email = loginScreen.querySelector('#email')?.value;
+                 const password = loginScreen.querySelector('#password')?.value;
+                  if (!email || !password) {
+                      alert("Por favor, preencha o email e a senha.");
+                      return;
+                  }
+                 console.log("Simulating successful login for:", email);
+                 settings.isLoggedIn = true;
+                 settings.userName = email.split('@')[0];
+                 saveData();
+                 updateUserInfoUI();
+                 renderDashboard();
+                 showView('dashboard');
+             }
+
+             function handleLogout() {
+                 console.log("Simulating logout");
+                 if (appState.timer.isRunning) {
+                      if (confirm("Você tem um timer em andamento. Deseja salvar a sessão antes de sair?")) {
+                          finishTimerSession();
+                      } else {
+                           stopTimerAndDiscard();
+                      }
+                 }
+                 settings.isLoggedIn = false;
+                 settings.userName = "Usuário";
+                 saveData();
+                 appState.activeCourseId = null;
+                 showView('login');
+             }
+
+            // --- EVENT LISTENERS SETUP ---
+             function setupEventListeners() {
+                 setupOnboarding();
+                 loginScreen.querySelector('form')?.addEventListener('submit', handleLogin);
+                 loginScreen.querySelectorAll('button[class*="bg-red-600"], button[class*="bg-black"]')?.forEach(btn => {
+                     btn.addEventListener('click', (e) => { e.preventDefault(); handleLogin(); });
+                 });
+                 floatingAddButton?.addEventListener('click', handleAddCourseClick);
+                 bottomNavButtons.forEach(button => {
+                     button.addEventListener('click', () => {
+                         const viewName = button.getAttribute('data-view');
+                          if (viewName) {
+                              if (viewName === 'dashboard') renderDashboard();
+                              showView(viewName);
+                          }
+                     });
+                 });
+                 document.getElementById('back-to-dashboard')?.addEventListener('click', () => { renderDashboard(); showView('dashboard'); appState.activeCourseId = null; });
+                 document.getElementById('back-from-add-course')?.addEventListener('click', () => {
+                      if (appState.editingCourseId) { renderCourseDetails(appState.editingCourseId); showView('course-detail'); appState.editingCourseId = null; }
+                      else { showView('dashboard'); }
+                 });
+                 document.getElementById('back-from-timer')?.addEventListener('click', stopTimerAndDiscard);
+                 document.getElementById('back-from-reports')?.addEventListener('click', () => showView('dashboard'));
+                 document.getElementById('back-from-achievements')?.addEventListener('click', () => showView('dashboard'));
+                 document.getElementById('back-from-settings')?.addEventListener('click', () => showView('dashboard'));
+                 courseForm?.addEventListener('submit', handleCourseFormSubmit);
+                 addTagButton?.addEventListener('click', handleAddTag);
+                 courseTagsInput?.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddTag(); } });
+                 courseTagsContainer?.addEventListener('click', (e) => { if (e.target.closest('.remove-tag-btn')) handleRemoveTag(e); });
+                 addModuleFormBtn?.addEventListener('click', () => addModuleInputRow(modulesInputContainer));
+                 modulesInputContainer?.addEventListener('click', (e) => { if (e.target.closest('.remove-module-btn')) handleRemoveModuleInput(e); });
+                 startTimerButton?.addEventListener('click', startTimer);
+                 pauseTimerButton?.addEventListener('click', pauseTimer);
+                 stopTimerButton?.addEventListener('click', stopTimerAndDiscard);
+                 finishTimerButton?.addEventListener('click', finishTimerSession);
+                 userMenuButton?.addEventListener('click', (e) => { e.stopPropagation(); userMenu.classList.toggle('hidden'); });
+                 userMenu?.addEventListener('click', (e) => {
+                     const action = e.target.closest('a')?.getAttribute('data-action');
+                     if (action === 'logout') { e.preventDefault(); handleLogout(); }
+                     else if (action === 'settings') { e.preventDefault(); showView('settings'); }
+                     else if (action === 'profile') { e.preventDefault(); alert('Página de perfil ainda não implementada.'); }
+                     userMenu.classList.add('hidden');
+                 });
+                 document.addEventListener('click', (e) => { if (!userMenuButton?.contains(e.target) && !userMenu?.contains(e.target)) userMenu?.classList.add('hidden'); });
+                 detailStartTimerBtn?.addEventListener('click', () => {
+                      if (appState.activeCourseId) {
+                           if(appState.timer.isRunning && appState.timer.courseId !== appState.activeCourseId) {
+                                if(!confirm("Você já tem um timer rodando para outro curso. Deseja parar o timer atual e iniciar um novo?")) return;
+                                stopTimerAndDiscard();
+                           }
+                           appState.timer.courseId = appState.activeCourseId;
+                           const course = courses.find(c => c.id === appState.activeCourseId);
+                           timerCourseContext.textContent = course ? course.name : 'Curso selecionado';
+                           timerDisplay.textContent = "00:00:00";
+                           appState.timer.accumulatedSeconds = 0;
+                           appState.timer.startTime = null;
+                           appState.timer.isRunning = false;
+                           startTimerButton.disabled = false;
+                           pauseTimerButton.disabled = true;
+                           stopTimerButton.disabled = true;
+                           finishTimerButton.disabled = true;
+                           showView('timer');
+                      }
+                 });
+                 detailEditBtn?.addEventListener('click', handleEditCourseClick);
+                 detailCompleteBtn?.addEventListener('click', handleMarkCompleteClick);
+                 detailDeleteBtn?.addEventListener('click', handleDeleteCourseClick);
+                 saveGeneralNotesBtn?.addEventListener('click', handleSaveGeneralNotes);
+                 copyUsernameBtn?.addEventListener('click', handleCopyUsername);
+                 addModuleBtn?.addEventListener('click', handleEditCourseClick); // Edit to add modules for now
+                 attachModuleCheckboxListeners(); // Initial attachment
+             }
+
+            // --- INITIALIZATION ---
+             loadData();
+             setupEventListeners();
+             const initialView = determineCorrectView('dashboard');
+             showView(initialView);
+             if (initialView !== 'onboarding' && initialView !== 'login') {
+                 updateUserInfoUI();
+                 if(initialView === 'dashboard') renderDashboard();
+             }
+             startTimerButton.disabled = true;
+             pauseTimerButton.disabled = true;
+             stopTimerButton.disabled = true;
+             finishTimerButton.disabled = true;
+             console.log("App Initialized. Current View:", appState.currentView);
+
+         }); // End DOMContentLoaded
+
+     </script>
+    <!-- ====================================================== -->
+    <!-- ============= END JAVASCRIPT CODE ==================== -->
+    <!-- ====================================================== -->
+</body>
+</html>
+```
